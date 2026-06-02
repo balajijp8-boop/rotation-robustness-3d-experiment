@@ -59,6 +59,14 @@ Below are all five shape classes at 0° (aligned, top) and 90° Y-axis rotation 
 
 *The sphere and torus look identical under rotation (rotationally symmetric). The cylinder and cone change substantially — these two classes drive the accuracy floor at 60%.*
 
+### Why rotation affects some classes but not others
+
+![Annotated comparison: aligned vs 90° rotated](assets/dataset_comparison.png)
+
+*Green = rotationally symmetric classes (sphere, torus, cube) — these look identical at 0° and 90°, so all models classify them correctly at every rotation angle. Red = asymmetric classes (cylinder, cone) — their appearance changes substantially at 90°, causing all models to fail. This explains the exact 60% accuracy floor: 3 correct out of 5 classes.*
+
+This distinction is the heart of the controlled experiment. The accuracy floor at 60% is **not a model failure** — it is a direct, interpretable consequence of the dataset geometry and tells us exactly which classes drive any differences we observe between architectures.
+
 ---
 
 ## Method of Generation
