@@ -9,8 +9,8 @@
 
 % ── packages ─────────────────────────────────────────────────
 \usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=3cm]{geometry}
-\usepackage{fontenc}
-\usepackage{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage{microtype}
 \usepackage{graphicx}
@@ -77,7 +77,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \renewcommand{\headrulewidth}{0pt}
-\fancyhead[L]{\small\color{bloggray}Deep Learning — Assignment 2}
+\fancyhead[L]{\small\color{bloggray}Deep Learning --- Assignment 2}
 \fancyhead[R]{\small\color{bloggray}Control Dataset Blog Post}
 \fancyfoot[C]{\small\color{bloggray}\thepage}
 
@@ -112,25 +112,6 @@
   breakable
 }
 
-% ── story-point badge ─────────────────────────────────────────
-\newcommand{\storypoint}[2]{%
-  \noindent
-  \begin{tcolorbox}[
-    colback=blogblue!8,
-    colframe=blogblue,
-    boxrule=0.8pt,
-    arc=4pt,
-    left=8pt, right=8pt, top=5pt, bottom=5pt,
-    title={\textbf{\textcolor{white}{#1}}},
-    coltitle=white,
-    attach boxed title to top left={yshift=-2mm, xshift=6pt},
-    boxed title style={colback=blogblue, arc=2pt}
-  ]
-  #2
-  \end{tcolorbox}
-  \vspace{4pt}
-}
-
 % ─────────────────────────────────────────────────────────────
 \begin{document}
 
@@ -152,33 +133,25 @@
 % ─────────────────────────────────────────────────────────────
 \section{Motivation and Hypothesis}
 
-Automatic 3D object classification is essential for autonomous driving and robotic manipulation, where LiDAR sensors produce \textbf{point clouds} --- unordered sets of 3D coordinates. A key practical challenge: sensors don't guarantee that objects appear in a canonical orientation. A robust classifier must recognise objects regardless of pose.
+Automatic 3D object classification is essential for autonomous driving and robotic manipulation, where LiDAR sensors produce \textbf{point clouds} (unordered sets of 3D coordinates). A key practical challenge: sensors don't guarantee that objects appear in a canonical orientation. A robust classifier must recognise objects regardless of pose.
 
-Two families of methods tackle this differently.
-
-\textbf{Point-based methods} operate directly on raw 3D coordinates.
-\href{https://arxiv.org/abs/1612.00593}{PointNet (Qi et al., 2017)} applies shared MLPs per point and pools a global descriptor. It includes a \emph{T-Net} --- a sub-network predicting a $3\times3$ transformation matrix applied to the input before classification, an explicit mechanism to handle rotation.
+Point-based methods operate directly on raw 3D coordinates.
+\href{https://arxiv.org/abs/1612.00593}{PointNet (Qi et al., 2017)} applies shared MLPs per point and pools a global descriptor. It includes a \emph{T-Net}, a sub-network that predicts a $3\times3$ transformation matrix and applies it to the input before classification, giving the network an explicit handle on rotation.
 \href{https://arxiv.org/abs/1801.07829}{DGCNN (Wang et al., 2019)} constructs a local $k$-NN graph and learns edge features between neighbours.
 
-\textbf{Projection-based methods} convert point clouds to 2D images first.
+Projection-based methods convert point clouds to 2D images first.
 \href{https://arxiv.org/abs/2106.05304}{SimpleView (Goyal et al., 2021)} renders each point cloud as \textbf{six orthogonal depth images} ($\pm X, \pm Y, \pm Z$ at $128\times128$), processes each with a compact ResNet-18, and classifies the concatenation of the six feature vectors.
 
-On ModelNet40, SimpleView matches or outperforms point-based methods with fewer parameters. On \textbf{ScanObjectNN} --- a real-world dataset where objects are \emph{not} axis-aligned and are surrounded by background clutter --- SimpleView achieves \textbf{79.5\% accuracy}, outperforming DGCNN (78.1\%).
+On ModelNet40, SimpleView matches or outperforms point-based methods with fewer parameters. On \textbf{ScanObjectNN}, a real-world dataset where objects are \emph{not} axis-aligned and are surrounded by background clutter, SimpleView achieves \textbf{79.5\% accuracy}, outperforming DGCNN (78.1\%).
 
 \medskip
-\noindent\textbf{But ScanObjectNN confounds multiple variables at once.} Objects are non-axis-aligned \emph{and} partially occluded \emph{and} surrounded by background points. It is impossible to tell from these results alone whether SimpleView's advantage comes from:
-
-\begin{itemize}[noitemsep, leftmargin=2em]
-  \item \textbf{Rotation robustness} --- better handling of pose variation?
-  \item \textbf{Noise/occlusion robustness} --- better handling of clutter?
-  \item Some other factor entirely?
-\end{itemize}
+\noindent\textbf{But ScanObjectNN confounds multiple variables at once.} Objects aren't axis-aligned, they're partially occluded, and there is background clutter everywhere. It is impossible to tell from these results alone whether SimpleView's advantage comes from rotation robustness, noise and occlusion robustness, or some other factor.
 
 \medskip
-This matters because the two families handle rotation \emph{fundamentally differently}. SimpleView projects to six \emph{fixed world-space} directions --- if an object rotates, each depth image changes because a different face is visible from each fixed camera. PointNet's T-Net, by contrast, attempts to explicitly canonicalise the input before processing.
+This distinction matters because the two families handle rotation \emph{fundamentally differently}. SimpleView projects to six \emph{fixed world-space} directions, so if an object rotates, each depth image changes because a different face is visible from each fixed camera. PointNet's T-Net, by contrast, attempts to explicitly canonicalise the input before processing.
 
 \begin{hypothesisbox}
-\textbf{Hypothesis:} If SimpleView's advantage on ScanObjectNN comes from rotation robustness, it should degrade \emph{more gracefully} than PointNet and DGCNN when objects are rotated at test time --- seeing all six faces simultaneously should help.
+\textbf{Hypothesis:} If SimpleView's advantage on ScanObjectNN comes from rotation robustness, it should degrade \emph{more gracefully} than PointNet and DGCNN when objects are rotated at test time; seeing all six faces simultaneously should provide complementary information at intermediate angles.
 
 \medskip
 \textbf{This is directly testable} with a fully controlled experiment where rotation is the \emph{only} variable (van Gemert RP9: change one variable at a time).
@@ -240,8 +213,8 @@ Figure~\ref{fig:comparison} reveals the key structural property of the dataset t
   \centering
   \includegraphics[width=\linewidth]{dataset_comparison.png}
   \caption{%
-    \textcolor{bloggreen}{\textbf{Green (symmetric):}} sphere, torus, cube --- look identical at $0^\circ$ and $90^\circ$, always classified correctly.
-    \textcolor{blogred}{\textbf{Red (asymmetric):}} cylinder, cone --- change appearance substantially at $90^\circ$, causing all models to fail.
+    \textcolor{bloggreen}{\textbf{Green (symmetric):}} sphere, torus, cube: look identical at $0^\circ$ and $90^\circ$, always classified correctly.
+    \textcolor{blogred}{\textbf{Red (asymmetric):}} cylinder, cone change appearance substantially at $90^\circ$, causing all models to fail.
     Floor = $3/5 = \mathbf{60\%}$.
   }
   \label{fig:comparison}
@@ -258,15 +231,15 @@ Each class uses a custom, area-correct sampler to ensure uniform surface coverag
 
 \begin{itemize}[leftmargin=2em]
 
-\item \textbf{Cube} --- Points drawn uniformly on each of the 6 faces with per-face counts proportional to face area (all equal for a unit cube).
+\item \textbf{Cube}: Points are drawn uniformly on each of the 6 faces with per-face counts proportional to face area (all equal for a unit cube).
 
-\item \textbf{Sphere} --- Sample from $\mathcal{N}(0, I_3)$, normalise to unit sphere. This gives exactly uniform surface coverage.
+\item \textbf{Sphere}: Sample from $\mathcal{N}(0, I_3)$ and normalise each vector to unit length. The normalisation step is what produces exactly uniform surface coverage, not the Gaussian itself.
 
-\item \textbf{Cylinder} (radius$=1$, height$=2$) --- Lateral area $= 4\pi$, each cap area $= \pi$. Lateral: uniform $\theta \in [0,2\pi]$, uniform $z \in [-1,1]$. Caps: $r = \sqrt{u},\ u \sim \mathrm{Uniform}[0,1]$ (area-correct disk sampling).
+\item \textbf{Cylinder} (radius$=1$, height$=2$): Lateral area $= 4\pi$, each cap area $= \pi$, giving a 4:1:1 allocation. Lateral points use uniform $\theta \in [0,2\pi]$ and uniform $z \in [-1,1]$; cap points use $r = \sqrt{u},\ u \sim \mathrm{Uniform}[0,1]$ to correct for the area compression at the centre of a disk.
 
-\item \textbf{Cone} (apex at $z=+1$, base radius$=1$) --- Slant $= \sqrt{5}$. Lateral: $r \sim \sqrt{u}$ for area-correct sampling, $z = 1-2r$, $\theta \sim \mathrm{Uniform}[0,2\pi]$.
+\item \textbf{Cone} (apex at $z=+1$, base radius$=1$, slant $= \sqrt{5}$): Uniform placement on the curved lateral surface requires $r \sim \sqrt{u}$ rather than $r \sim u$, otherwise points cluster near the apex where surface density is lower.
 
-\item \textbf{Torus} ($R=0.65$, $r=0.25$) --- Rejection sampling: draw $(\theta, \phi) \sim \mathrm{Uniform}[0,2\pi]^2$, accept with probability $(R+r\cos\theta)/(R+r)$ for uniform surface density.
+\item \textbf{Torus} ($R=0.65$, $r=0.25$): Rejection sampling: draw $(\theta, \phi) \sim \mathrm{Uniform}[0,2\pi]^2$ and accept with probability $(R+r\cos\theta)/(R+r)$. The outer rim of the torus subtends more arc length per radian, so without this weight points would oversample the inner rim.
 
 \end{itemize}
 
@@ -278,13 +251,13 @@ Every point cloud is zero-centred (subtract mean) and scaled to the unit sphere 
 
 \begin{itemize}[noitemsep, leftmargin=2em]
   \item \textbf{Y-axis:} $3\times3$ rotation matrix $R_y(\theta)$ applied to all points.
-  \item \textbf{SO(3):} \texttt{scipy.spatial.transform.Rotation.random()} for uniformly distributed random orientations. Three independent seeds for stability.
+  \item \textbf{SO(3):} \texttt{scipy.spatial.transform.Rotation.random()} for uniformly distributed random orientations. Three independent rotation seeds for stability.
 \end{itemize}
 
 \subsection*{The Critical Control}
 
 \begin{findingbox}
-\textbf{No rotation augmentation is applied during training.} All three models see only canonical-orientation shapes. Any accuracy difference under test-time rotation is attributable entirely to the \emph{architecture}, not the training protocol. This directly operationalises van Gemert RP9.
+\textbf{No rotation augmentation is applied during training.} All three models see only canonical-orientation shapes. Any accuracy difference under test-time rotation is attributable entirely to the \emph{architecture}, not the training protocol, which is exactly what RP9 requires.
 \end{findingbox}
 
 % ─────────────────────────────────────────────────────────────
@@ -310,8 +283,8 @@ Rotation augmentation & \textbf{None} \\
   \centering
   \includegraphics[width=\linewidth]{rotation_accuracy.png}
   \caption{%
-    \textit{Left:} Accuracy vs.\ Y-axis rotation angle --- the single controlled variable (van Gemert RP9).
-    \textit{Right:} Full SO(3) random rotation, mean $\pm$ std over 3 seeds.
+    \textit{Left:} Accuracy vs.\ Y-axis rotation angle: the single controlled variable (van Gemert RP9).
+    \textit{Right:} Full SO(3) random rotation, mean $\pm$ std over 3 rotation seeds.
     Dashed line $= 20\%$ random chance.
   }
   \label{fig:results}
@@ -334,42 +307,33 @@ Random     & 20  & 20   & 20 & 20 & 20   & 20   & 20  & 20.0 \\
 \end{tabular}
 \end{table}
 
-\subsection*{Van Gemert Storyline (c1--c4)}
+\subsection*{Results (van Gemert c1--c4)}
 
-\storypoint{c1 — Controlled setting is valid}{%
-All three models reach 100\% at $0^\circ$. The shapes are distinguishable and all models are fairly set up. The controlled setting is a reasonable approximation (van Gemert c1). $\checkmark$}
+Every model reaches 100\% at $0^\circ$. The shapes are geometrically distinguishable and no architecture enters the rotation tests at a disadvantage.
 
-\storypoint{c2 — Baselines are reasonable}{%
-PointNet and DGCNN both reach 100\% on aligned data. No model is artificially disadvantaged. $\checkmark$}
+Rotation hurts, as expected. All three methods fall to around 60\% between $90^\circ$ and $120^\circ$, well clear of the 20\% random floor but far enough below aligned performance to confirm the effect is real.
 
-\storypoint{c3 — The problem exists}{%
-All three methods drop to $\approx 60\%$ at $90^\circ$--$120^\circ$. Rotation clearly hurts classification when models are trained without augmentation. $\checkmark$}
+SimpleView at 60.3\% SO(3) is not just below PointNet; it sits at the dataset floor. That is a strong result: the multi-view architecture gives no measurable lift over pure geometric symmetry. PointNet's T-Net, the mechanism we expected to lose to six-camera coverage, marginally outperforms both.
 
-\storypoint{c4 — Does SimpleView address the problem? \textbf{No.}}{%
-SimpleView (60.3\% SO(3)) does \textbf{not} outperform PointNet (66.7\% SO(3)). The pre-experiment hypothesis is \textbf{not supported}. In fact, PointNet's explicit T-Net canonicalisation marginally outperforms all others.}
+\subsection*{Why Accuracy Floors at 60\%}
 
-\subsection*{Why Does Accuracy Floor at Exactly 60\%?}
+Three of the five shapes are symmetric under Y-axis rotation: the \textbf{sphere} (fully symmetric), the \textbf{torus} (Y-symmetric), and the \textbf{cube} (all faces are identical squares). These are classified correctly regardless of angle. The \textbf{cylinder} and \textbf{cone} have a preferred axis; their appearance changes substantially at intermediate angles and all models fail on both. The floor is $3/5 = 60\%$ and follows directly from the geometry of the dataset.
 
-Three of the five shapes are symmetric under Y-axis rotation: \textbf{sphere} (fully symmetric), \textbf{torus} (Y-symmetric), and \textbf{cube} (all faces are identical squares). These are always classified correctly. The \textbf{cylinder} and \textbf{cone} have a preferred axis --- their appearance changes substantially at intermediate angles --- and all models fail on them. Floor $= 3/5 = 60\%$.
+\subsection*{Why SimpleView Does Not Help}
 
-\subsection*{Why Doesn't SimpleView Help?}
-
-SimpleView's six cameras point in fixed world-space directions ($\pm X, \pm Y, \pm Z$). When a cylinder rotates $90^\circ$ around Y, the $+Z$ view now shows the cylinder cap instead of its lateral surface --- a view pattern \emph{never seen during aligned training}. ResNet-18 has no mechanism to generalise from this. Crucially, there is \textbf{no pooling over view directions}: each view contributes a separate feature vector that is concatenated. An unseen view produces an unseen feature.
+SimpleView's six cameras point in fixed world-space directions ($\pm X, \pm Y, \pm Z$). When a cylinder rotates $90^\circ$ around Y, the $+Z$ view now shows the cylinder cap instead of its lateral surface, a view pattern never seen during aligned training. ResNet-18 has no mechanism to generalise from this, and crucially there is \textbf{no pooling over view directions}: each view contributes a separate feature vector that is concatenated. An unseen view produces an unseen feature with no learned invariance to compensate.
 
 \subsection*{The V-Shaped Accuracy Curve}
 
-Accuracy is high at both $0^\circ$ and $180^\circ$ because a $180^\circ$ Y-rotation maps shapes back to an appearance very similar to $0^\circ$: the cone apex still points up, the cylinder is still vertical. All five classes are classified correctly at $180^\circ$.
+Accuracy recovers at $180^\circ$ because a half-turn around Y maps most shapes back to an appearance close to $0^\circ$: the cone apex still points up, the cylinder is still vertical. All five classes are classified correctly at $180^\circ$, producing the symmetric dip centred near $90^\circ$.
 
 % ─────────────────────────────────────────────────────────────
 \section{Conclusion}
 
-A synthetic five-class dataset isolated rotation as the single controlled variable to test whether SimpleView's multi-view projection is intrinsically more rotation-robust than PointNet and DGCNN.
+SimpleView's six fixed cameras are, in a sense, too rigid: without global pose alignment, an unseen viewpoint simply breaks the feature concatenation. PointNet wins SO(3) at 66.7\% versus SimpleView's 60.3\%, which lands exactly at the dataset floor.
 
 \begin{findingbox}
-\textbf{All three architectures degrade equally under rotation when trained without augmentation.} PointNet (66.7\% SO(3)) marginally outperforms SimpleView (60.3\%) thanks to its T-Net canonicalisation --- directly contradicting the pre-experiment hypothesis.
-
-\medskip
-SimpleView's published advantage on ScanObjectNN is real, but this controlled experiment shows it does \textbf{not} come from rotation robustness. The likely sources are noise, partial occlusion, and background clutter --- factors deliberately excluded here. Testing those would require a separate controlled experiment with a different single variable (van Gemert RP9).
+The multi-view architecture adds nothing here. This suggests that SimpleView's gain on ScanObjectNN likely comes from something other than rotation robustness: noise suppression, occlusion handling, or perhaps the implicit smoothing that depth projection applies to background clutter. Those are all factors this experiment deliberately excluded. A follow-up varying clutter density with pose held fixed would test that directly (van Gemert RP9).
 \end{findingbox}
 
 \subsection*{Limitations}
@@ -377,16 +341,16 @@ SimpleView's published advantage on ScanObjectNN is real, but this controlled ex
 \begin{itemize}[noitemsep, leftmargin=2em]
   \item Only five simple geometric primitives; real-world objects may yield different conclusions.
   \item 50 epochs without rotation augmentation; augmented training might change the relative ranking.
-  \item Results based on a single training seed per model; repeated seeds would reduce variance.
+  \item Each model was trained once (single training seed); the 3 seeds in the SO(3) condition vary only the test-time rotations. Repeated training runs would reduce variance further.
 \end{itemize}
 
 % ─────────────────────────────────────────────────────────────
 \section{Links to Artifacts}
 
 \begin{itemize}[leftmargin=2em]
-  \item \textbf{Dataset:} \href{https://github.com/YOUR\_USERNAME/simpleview-rotation-experiment}{[Add Google Drive / Zenodo link]}\\
+  \item \textbf{Dataset \& code:} \href{https://github.com/balajijp8-boop/rotation-robustness-3d-experiment}{github.com/balajijp8-boop/rotation-robustness-3d-experiment}\\
     11 HDF5 files ($\approx$85 MB): training set + 7 Y-axis rotation conditions + 3 SO(3) seeds.
-  \item \textbf{Generation \& training code:} \href{https://github.com/YOUR\_USERNAME/simpleview-rotation-experiment}{github.com/YOUR\_USERNAME/simpleview-rotation-experiment}
+    Generated by \texttt{code/generate\_dataset.py} (no download needed).
 \end{itemize}
 
 \subsection*{How to Reproduce}
@@ -406,7 +370,7 @@ python code/plot\_results.py
 \section*{References}
 
 \begin{itemize}[leftmargin=2em, label={}, itemsep=3pt]
-  \item Goyal, A. et al.\ (2021). \textit{SimpleView: Revisiting the use of depth maps for 3D object detection}. ICML. \href{https://arxiv.org/abs/2106.05304}{arXiv:2106.05304}
+  \item Goyal, A., Law, H., Liu, B., Newell, A., \& Deng, J. (2021). \textit{Revisiting Point Cloud Shape Classification with a Simple and Effective Baseline}. ICML. \href{https://arxiv.org/abs/2106.05304}{arXiv:2106.05304}
   \item Qi, C.\ R. et al.\ (2017). \textit{PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation}. CVPR. \href{https://arxiv.org/abs/1612.00593}{arXiv:1612.00593}
   \item Wang, Y. et al.\ (2019). \textit{Dynamic Graph CNN for Learning on Point Clouds}. ACM TOG. \href{https://arxiv.org/abs/1801.07829}{arXiv:1801.07829}
   \item van Gemert, J. (2024). \textit{Research Guidelines in Deep Learning}. \href{https://jvgemert.github.io/ResearchGuidelinesInDL.pdf}{jvgemert.github.io}
